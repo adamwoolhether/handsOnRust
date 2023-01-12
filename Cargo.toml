@@ -1,0 +1,16 @@
+[package]
+name = "handsOnRust"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+[workspace]
+members = [
+    "flappy",
+]
+
+[source.crates-io]
+registry = "git://github.com/rust-lang/crates.io-index.git"
