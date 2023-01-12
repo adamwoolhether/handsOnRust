@@ -11,41 +11,59 @@ enum GameMode {
 const SCREEN_WIDTH: i32 = 80;
 const SCREEN_HEIGHT: i32 = 50;
 const FRAME_DURATION: f32 = 75.0;
+const DRAGON_FRAMES: [u16; 6] = [64, 1, 2, 3, 2, 1];
 
 struct Player {
     x: i32,        // position of player's progress through the level.
-    y: i32,        // vertical position of player in screen-space.
+    y: f32,        // vertical position of player in screen-space.
     velocity: f32, // vertical velocity.
+    frame: usize,  // Usize to index arrays
 }
 impl Player {
     fn new(x: i32, y: i32) -> Self {
         Player {
             x,
-            y,
+            y: y as f32,
             velocity: 0.0,
+            frame: 0,
         }
     }
 
     // render will render the player, aa '@' on the screen with `ctx.set`.
     fn render(&mut self, ctx: &mut BTerm) {
-        ctx.set(0, self.y, YELLOW, BLACK, to_cp437('@'));
+        ctx.set_active_console(1);
+        ctx.cls();
+        ctx.set_fancy(
+            PointF::new(0.0, self.y), // Contains the sprite location in floating point coordinates
+            1,                        // Scale
+            Degrees::new(0.0),        // Rotation
+            PointF::new(2.0, 2.0),
+            WHITE, // Colors
+            NAVY,
+            DRAGON_FRAMES[self.frame], // The character to render
+        );
+        ctx.set_active_console(0);
     }
 
     fn gravity_and_move(&mut self) {
         if self.velocity < 2.0 {
             // apply gravity if downward momentum is less than 2.
-            self.velocity += 0.2;
+            self.velocity += 0.1;
         }
-        self.y += self.velocity as i32;
+        self.y += self.velocity;
         self.x += 1;
-        if self.y < 0 {
-            self.y = 0;
+        if self.y < 0.0 {
+            self.y = 0.0;
         }
+
+        self.x += 1;
+        self.frame += 1;
+        self.frame = self.frame % 6
     }
 
     // flap sets velocity to a negative number to move the character upwards.
     fn flap(&mut self) {
-        self.velocity = -2.0;
+        self.velocity = -1.0;
     }
 }
 
@@ -81,10 +99,13 @@ impl Obstacle {
 
     fn hit_obstacle(&self, player: &Player) -> bool {
         let half_size = self.size / 2;
-        let does_x_match = player.x == self.x; // Player is travelling within gap, potential collision.
-        let player_above_gap = player.y < self.gap_y - half_size;
-        let player_below_gap = player.y > self.gap_y + half_size;
-        does_x_match && (player_above_gap || player_below_gap)
+        player.x == self.x
+            && ((player.y as i32) < self.gap_y - half_size
+                || player.y as i32 > self.gap_y + half_size)
+        // let does_x_match = player.x == self.x; // Player is travelling within gap, potential collision.
+        // let player_above_gap = player.y < self.gap_y - half_size;
+        // let player_below_gap = player.y > self.gap_y + half_size;
+        // does_x_match && (player_above_gap || player_below_gap)
     }
 }
 
@@ -131,7 +152,7 @@ impl State {
             self.obstacle = Obstacle::new(self.player.x + SCREEN_WIDTH, self.score);
         }
 
-        if self.player.y > SCREEN_HEIGHT || self.obstacle.hit_obstacle(&self.player) {
+        if self.player.y as i32 > SCREEN_HEIGHT || self.obstacle.hit_obstacle(&self.player) {
             // play fell off the screen or hit an obstacle.
             self.mode = GameMode::End;
         }
@@ -194,8 +215,12 @@ impl GameState for State {
 
 fn main() -> BError {
     // Returning BError, which is a `Result` type.
-    let context = BTermBuilder::simple80x50()
-        .with_title("Flappy Dragon")
+    let context = BTermBuilder::new()
+        .with_font("../resources/flappy32.png", 32, 32)
+        .with_simple_console(SCREEN_WIDTH, SCREEN_HEIGHT, "../resources/flappy32.png")
+        .with_fancy_console(SCREEN_WIDTH, SCREEN_HEIGHT, "../resources/flappy32.png") // fancy_console allows fractional positioning on the terminal.
+        .with_title("Flappy Dragon Enhanced")
+        .with_tile_dimensions(16, 16)
         .build()?; // ? passes errors up to the parent function.
 
     main_loop(context, State::new()) // implicit error returning, no semicolon needed.
