@@ -1,4 +1,5 @@
 mod map;
+mod player;
 
 // prelude's allow us to conveniently access items in the module,
 // exporting common functionality to the rest of the program.
@@ -7,6 +8,7 @@ mod prelude {
     pub const SCREEN_WIDTH: i32 = 80;
     pub const SCREEN_HEIGHT: i32 = 50;
     pub use crate::map::*;
+    pub use crate::player::*;
 }
 
 use prelude::*;
@@ -14,16 +16,22 @@ use prelude::*;
 // State will consume the Map API.
 struct State {
     map: Map,
+    player: Player,
 }
 impl State {
     fn new() -> Self {
-        Self { map: Map::new() }
+        Self {
+            map: Map::new(),
+            player: Player::new(Point::new(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)),
+        }
     }
 }
 impl GameState for State {
     fn tick(&mut self, ctx: &mut BTerm) {
         ctx.cls();
+        self.player.update(ctx, &self.map);
         self.map.render(ctx);
+        self.player.render(ctx);
     }
 }
 

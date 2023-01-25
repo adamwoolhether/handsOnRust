@@ -43,4 +43,25 @@ impl Map {
             }
         }
     }
+
+    // in_bounds ensures that the player cannot walk off of the map.
+    pub fn in_bounds(&self, point: Point) -> bool {
+        point.x >= 0 && point.x < SCREEN_WIDTH && point.y >= 0 && point.y < SCREEN_HEIGHT
+    }
+
+    // can_enter_tile checks if the player can walk into the desired tile, preventing it
+    // from walking into walls.
+    pub fn can_enter_tile(&self, point: Point) -> bool {
+        self.in_bounds(point) && self.tiles[map_idx(point.x, point.y)] == TileType::Floor
+    }
+
+    // try_idx determines if a tile's index coordinates are valid and do not fall outside
+    // of the maps boundaries.
+    pub fn try_idx(&self, point: Point) -> Option<usize> {
+        if !self.in_bounds(point) {
+            None
+        } else {
+            Some(map_idx(point.x, point.y))
+        }
+    }
 }
